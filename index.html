@@ -66,10 +66,29 @@
   .service h3 { font-size: 1.4rem; margin-bottom: 8px; }
   .service p { margin: 0; color: var(--muted); }
 
-  /* Galería */
+  /* Catálogo */
+  .catalog { background: var(--blue); }
+  .catalog-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  .catalog p { color: #fff; max-width: 48ch; margin: 0 0 28px; font-size: 1.1rem; }
+  .catalog .btn { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .catalog .btn:hover { background: var(--bg); color: var(--text); border-color: var(--bg); }
+  .catalog :focus-visible { outline-color: #fff; }
+  .catalog img { aspect-ratio: 4/3; object-fit: cover; width: 100%; background: var(--panel); }
+
+  /* Galería (carrusel) */
   #galeria { background: var(--panel); }
-  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .gallery img { aspect-ratio: 4/3; object-fit: cover; width: 100%; background: var(--bg); }
+  .carousel { position: relative; }
+  .track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 4px; }
+  .track::-webkit-scrollbar { display: none; }
+  .slide { flex: 0 0 100%; scroll-snap-align: center; margin: 0; }
+  .slide img { aspect-ratio: 16/9; object-fit: cover; width: 100%; background: var(--bg); }
+  .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; border: 0; background: rgba(10,10,10,.7); color: var(--text); font-size: 1.8rem; line-height: 1; cursor: pointer; }
+  .arrow:hover { background: var(--blue); }
+  .arrow.prev { left: 12px; }
+  .arrow.next { right: 12px; }
+  .dots { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  .dots button { width: 14px; height: 14px; border-radius: 50%; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+  .dots button[aria-current="true"] { background: var(--blue-hi); }
 
   /* Proceso */
   .steps { list-style: none; counter-reset: paso; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 0; padding: 0; }
@@ -100,15 +119,15 @@
     nav.open { display: block; }
     nav ul { flex-direction: column; gap: 4px; }
     nav a { display: block; padding: 12px 0; }
-    .hero .wrap, .about { grid-template-columns: 1fr; }
+    .hero .wrap, .about, .catalog-grid { grid-template-columns: 1fr; }
     .hero .crop { max-width: 380px; margin: 0 auto; order: -1; }
-    .services, .gallery { grid-template-columns: 1fr 1fr; }
+    .services { grid-template-columns: 1fr 1fr; }
     .steps { grid-template-columns: 1fr 1fr; }
     .social { grid-template-columns: 1fr 1fr; }
     section { padding: 64px 0; }
   }
   @media (max-width: 560px) {
-    .services, .gallery, .steps { grid-template-columns: 1fr; }
+    .services, .steps { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -125,6 +144,7 @@
       <ul>
         <li><a href="#inicio">Inicio</a></li>
         <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#catalogo">Catálogo</a></li>
         <li><a href="#galeria">Galería</a></li>
         <li><a href="#proceso">Cómo trabajamos</a></li>
         <li><a href="#nosotros">Nosotros</a></li>
@@ -173,17 +193,33 @@
     </div>
   </section>
 
+  <section class="catalog" id="catalogo">
+    <div class="wrap catalog-grid">
+      <div>
+        <h2>Catálogo</h2>
+        <p>Explora todos nuestros productos en nuestro catálogo digital.</p>
+        <a class="btn" href="https://canva.link/ceyjm06jg9z5kex" target="_blank" rel="noopener">Ver catálogo</a>
+      </div>
+      <img src="img/catalogo.jpg" alt="Vista previa del catálogo de APEx3D" width="800" height="600" loading="lazy">
+    </div>
+  </section>
+
   <section id="galeria">
     <div class="wrap">
       <h2>Galería</h2>
       <p class="lead">Algunos de nuestros trabajos.</p>
-      <div class="gallery">
-        <img src="img/galeria-1.jpg" alt="Trabajo de impresión 3D 1" width="600" height="450" loading="lazy">
-        <img src="img/galeria-2.jpg" alt="Trabajo de impresión 3D 2" width="600" height="450" loading="lazy">
-        <img src="img/galeria-3.jpg" alt="Trabajo de impresión 3D 3" width="600" height="450" loading="lazy">
-        <img src="img/galeria-4.jpg" alt="Trabajo de impresión 3D 4" width="600" height="450" loading="lazy">
-        <img src="img/galeria-5.jpg" alt="Trabajo de impresión 3D 5" width="600" height="450" loading="lazy">
-        <img src="img/galeria-6.jpg" alt="Trabajo de impresión 3D 6" width="600" height="450" loading="lazy">
+      <div class="carousel" aria-roledescription="carrusel" aria-label="Galería de trabajos">
+        <div class="track" id="track" tabindex="0">
+          <figure class="slide"><img src="img/galeria-1.jpg" alt="Trabajo de impresión 3D 1" width="1200" height="675"></figure>
+          <figure class="slide"><img src="img/galeria-2.jpg" alt="Trabajo de impresión 3D 2" width="1200" height="675" loading="lazy"></figure>
+          <figure class="slide"><img src="img/galeria-3.jpg" alt="Trabajo de impresión 3D 3" width="1200" height="675" loading="lazy"></figure>
+          <figure class="slide"><img src="img/galeria-4.jpg" alt="Trabajo de impresión 3D 4" width="1200" height="675" loading="lazy"></figure>
+          <figure class="slide"><img src="img/galeria-5.jpg" alt="Trabajo de impresión 3D 5" width="1200" height="675" loading="lazy"></figure>
+          <figure class="slide"><img src="img/galeria-6.jpg" alt="Trabajo de impresión 3D 6" width="1200" height="675" loading="lazy"></figure>
+        </div>
+        <button class="arrow prev" id="prev" aria-label="Foto anterior">&#8249;</button>
+        <button class="arrow next" id="next" aria-label="Foto siguiente">&#8250;</button>
+        <div class="dots" id="dots"></div>
       </div>
     </div>
   </section>
@@ -246,6 +282,55 @@
       burger.setAttribute('aria-expanded', 'false');
     }
   });
+
+  // Carrusel de la galería
+  var track = document.getElementById('track');
+  var dotsBox = document.getElementById('dots');
+  var total = track.children.length;
+  var current = 0;
+  var paused = false;
+
+  for (var i = 0; i < total; i++) {
+    (function (n) {
+      var b = document.createElement('button');
+      b.setAttribute('aria-label', 'Ir a la foto ' + (n + 1));
+      b.addEventListener('click', function () { go(n); });
+      dotsBox.appendChild(b);
+    })(i);
+  }
+
+  function mark() {
+    for (var i = 0; i < total; i++) {
+      dotsBox.children[i].setAttribute('aria-current', i === current ? 'true' : 'false');
+    }
+  }
+
+  function go(n) {
+    current = (n + total) % total;
+    track.scrollTo({ left: current * track.clientWidth, behavior: 'smooth' });
+    mark();
+  }
+
+  track.addEventListener('scroll', function () {
+    var n = Math.round(track.scrollLeft / track.clientWidth);
+    if (n !== current) { current = n; mark(); }
+  });
+
+  document.getElementById('prev').addEventListener('click', function () { go(current - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(current + 1); });
+
+  var box = track.parentElement;
+  ['mouseenter', 'focusin', 'touchstart'].forEach(function (ev) {
+    box.addEventListener(ev, function () { paused = true; });
+  });
+  ['mouseleave', 'focusout', 'touchend'].forEach(function (ev) {
+    box.addEventListener(ev, function () { paused = false; });
+  });
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    setInterval(function () { if (!paused) go(current + 1); }, 5000);
+  }
+  mark();
 </script>
 </body>
 </html>
