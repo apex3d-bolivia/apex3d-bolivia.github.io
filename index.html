@@ -2,90 +2,250 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>APEx3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APEx3D | Impresión 3D en La Paz</title>
+<meta name="description" content="APEx3D: impresión 3D, prototipos, repuestos y piezas personalizadas en La Paz, Bolivia.">
+<link rel="icon" href="img/logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #e8edf0;
-    --ink: #13202b;
-    --filament: #ff5a1f;
-    --muted: #4d5d6a;
+    --bg: #0a0a0a;
+    --panel: #101722;
+    --line: #1e2a3a;
+    --blue: #1f6fd1;
+    --blue-hi: #4a95f5;
+    --text: #f2f4f7;
+    --muted: #9aa7b5;
+    --head: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.6;
-  }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--body); line-height: 1.65; }
+  img { max-width: 100%; display: block; }
   a { color: inherit; }
-  :focus-visible { outline: 3px solid var(--filament); outline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--blue-hi); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--head); line-height: 1.1; margin: 0; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 88px 0; }
+  section h2 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 16px; }
+  .lead { color: var(--muted); max-width: 56ch; margin: 0 0 40px; font-size: 1.1rem; }
 
-  header, main, footer { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-  header { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; padding-bottom: 24px; }
-  header strong { font-weight: 900; font-size: 1.1rem; }
-  nav a { margin-left: 20px; text-decoration: none; font-weight: 600; }
-  nav a:hover { text-decoration: underline; text-decoration-color: var(--filament); text-underline-offset: 6px; }
+  /* Header */
+  header { position: sticky; top: 0; z-index: 10; background: rgba(10,10,10,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; font-family: var(--head); font-weight: 700; font-size: 1.4rem; }
+  .crop { overflow: hidden; width: 52px; height: 52px; }
+  .crop img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.6); transform-origin: 52% 47%; }
+  nav ul { list-style: none; display: flex; gap: 28px; margin: 0; padding: 0; }
+  nav a { text-decoration: none; font-weight: 600; color: var(--muted); padding: 6px 0; border-bottom: 2px solid transparent; }
+  nav a:hover { color: var(--text); border-color: var(--blue); }
+  .burger { display: none; background: none; border: 1px solid var(--line); color: var(--text); padding: 8px 14px; font: 600 1rem var(--body); cursor: pointer; border-radius: 4px; }
 
-  .hero { padding: 72px 0 88px; }
-  .hero h1 {
-    margin: 0;
-    font-size: clamp(3.5rem, 18vw, 10rem);
-    line-height: 0.95;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    color: transparent;
-    background: repeating-linear-gradient(to bottom, var(--ink) 0 6px, var(--paper) 6px 8px);
-    -webkit-background-clip: text;
-    background-clip: text;
+  /* Hero */
+  .hero { position: relative; padding: 72px 0 96px; overflow: hidden; }
+  .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 160px; background: repeating-linear-gradient(to bottom, var(--blue) 0 3px, transparent 3px 14px); opacity: .5; -webkit-mask-image: linear-gradient(to top, #000, transparent); mask-image: linear-gradient(to top, #000, transparent); pointer-events: none; }
+  .hero .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; }
+  .hero h1 { font-size: clamp(2.6rem, 7vw, 4.8rem); letter-spacing: -.02em; }
+  .hero p { color: var(--muted); font-size: 1.2rem; max-width: 46ch; margin: 24px 0 32px; }
+  .hero .crop { width: 100%; height: auto; aspect-ratio: 1; }
+  .hero .crop img { transform: scale(1.45); }
+  .btns { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-block; padding: 14px 26px; font-weight: 600; text-decoration: none; border: 2px solid var(--blue); border-radius: 4px; color: var(--text); }
+  .btn.primary { background: var(--blue); }
+  .btn.primary:hover { background: var(--blue-hi); border-color: var(--blue-hi); }
+  .btn:not(.primary):hover { background: var(--panel); }
+
+  /* Servicios */
+  .services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .service { border-top: 3px solid var(--blue); padding-top: 20px; }
+  .service img { aspect-ratio: 3/2; object-fit: cover; width: 100%; margin-bottom: 20px; background: var(--panel); }
+  .service h3 { font-size: 1.4rem; margin-bottom: 8px; }
+  .service p { margin: 0; color: var(--muted); }
+
+  /* Galería */
+  #galeria { background: var(--panel); }
+  .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .gallery img { aspect-ratio: 4/3; object-fit: cover; width: 100%; background: var(--bg); }
+
+  /* Proceso */
+  .steps { list-style: none; counter-reset: paso; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 0; padding: 0; }
+  .steps li { counter-increment: paso; border-left: 2px solid var(--line); padding-left: 20px; }
+  .steps li::before { content: counter(paso); font-family: var(--head); font-weight: 700; font-size: 2.6rem; color: var(--blue-hi); display: block; line-height: 1; margin-bottom: 8px; }
+  .steps h3 { font-size: 1.15rem; margin-bottom: 6px; }
+  .steps p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+  /* Nosotros */
+  #nosotros { background: var(--panel); }
+  .about { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .about img { aspect-ratio: 4/3; object-fit: cover; width: 100%; }
+  .about p { color: var(--muted); margin: 0 0 16px; }
+
+  /* Contacto */
+  .social { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+  .social .btn { text-align: center; }
+  .phone { margin-top: 24px; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 calc(28px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: .9rem; text-align: center; }
+
+  .wa-float { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 20; background: var(--blue); color: var(--text); font-weight: 600; text-decoration: none; padding: 14px 22px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+  .wa-float:hover { background: var(--blue-hi); }
+
+  @media (max-width: 860px) {
+    .burger { display: block; }
+    nav { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg); border-bottom: 1px solid var(--line); padding: 8px 24px 20px; }
+    nav.open { display: block; }
+    nav ul { flex-direction: column; gap: 4px; }
+    nav a { display: block; padding: 12px 0; }
+    .hero .wrap, .about { grid-template-columns: 1fr; }
+    .hero .crop { max-width: 380px; margin: 0 auto; order: -1; }
+    .services, .gallery { grid-template-columns: 1fr 1fr; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .social { grid-template-columns: 1fr 1fr; }
+    section { padding: 64px 0; }
   }
-  .hero p { max-width: 46ch; margin: 24px 0 32px; font-size: 1.25rem; color: var(--muted); }
-  .btn {
-    display: inline-block; padding: 14px 24px;
-    background: var(--filament); color: var(--ink);
-    font-weight: 600; text-decoration: none; border-radius: 4px;
+  @media (max-width: 560px) {
+    .services, .gallery, .steps { grid-template-columns: 1fr; }
   }
-  .btn:hover { background: var(--ink); color: var(--paper); }
-
-  section { padding: 48px 0; border-top: 2px solid var(--ink); }
-  section h2 { margin: 0 0 12px; font-size: 1.75rem; font-weight: 900; }
-  section p { max-width: 60ch; margin: 0; }
-
-  footer { padding-top: 32px; padding-bottom: 48px; color: var(--muted); font-size: 0.9rem; }
 </style>
 </head>
 <body>
-  <header>
-    <strong>APEx3D</strong>
-    <nav>
-      <a href="#nosotros">Nosotros</a>
-      <a href="#contacto">Contacto</a>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#inicio" aria-label="APEx3D, ir al inicio">
+      <span class="crop"><img src="img/logo.jpg" alt="" width="104" height="104"></span>
+      APEx3D
+    </a>
+    <button class="burger" id="burger" aria-expanded="false" aria-controls="menu">Menú</button>
+    <nav id="menu" aria-label="Principal">
+      <ul>
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#servicios">Servicios</a></li>
+        <li><a href="#galeria">Galería</a></li>
+        <li><a href="#proceso">Cómo trabajamos</a></li>
+        <li><a href="#nosotros">Nosotros</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ul>
     </nav>
-  </header>
+  </div>
+</header>
 
-  <main>
-    <div class="hero">
-      <h1>APEx3D</h1>
-      <p>Página de prueba publicada con GitHub Pages. Aquí irá la descripción de tu proyecto.</p>
-      <a class="btn" href="#contacto">Contáctanos</a>
+<main>
+  <section class="hero" id="inicio">
+    <div class="wrap">
+      <div>
+        <h1>Tus ideas, impresas en 3D</h1>
+        <p>Prototipos, repuestos y piezas personalizadas en La Paz. Cuéntanos qué necesitas y lo fabricamos capa por capa.</p>
+        <div class="btns">
+          <a class="btn primary" href="https://wa.me/59160128027" target="_blank" rel="noopener">Cotizar por WhatsApp</a>
+          <a class="btn" href="#galeria">Ver trabajos</a>
+        </div>
+      </div>
+      <div class="crop"><img src="img/logo.jpg" alt="Logo de APEx3D" width="600" height="600"></div>
     </div>
+  </section>
 
-    <section id="nosotros">
-      <h2>Sobre nosotros</h2>
-      <p>Reemplaza este texto con la historia y los servicios de APEx3D.</p>
-    </section>
+  <section id="servicios">
+    <div class="wrap">
+      <h2>Servicios</h2>
+      <p class="lead">Desde una sola pieza hasta series pequeñas, con el material y el acabado que tu proyecto necesita.</p>
+      <div class="services">
+        <article class="service">
+          <img src="img/servicio-1.jpg" alt="Prototipos impresos en 3D" width="600" height="400" loading="lazy">
+          <h3>Prototipos</h3>
+          <p>Prueba tu diseño en físico antes de producirlo. Ajustes rápidos y a bajo costo.</p>
+        </article>
+        <article class="service">
+          <img src="img/servicio-2.jpg" alt="Piezas personalizadas" width="600" height="400" loading="lazy">
+          <h3>Piezas personalizadas</h3>
+          <p>Fabricamos lo que no encuentras en tiendas: soportes, carcasas, regalos y más.</p>
+        </article>
+        <article class="service">
+          <img src="img/servicio-3.jpg" alt="Repuestos y piezas funcionales" width="600" height="400" loading="lazy">
+          <h3>Repuestos funcionales</h3>
+          <p>Reemplazos resistentes para equipos, herramientas y proyectos mecánicos.</p>
+        </article>
+      </div>
+    </div>
+  </section>
 
-    <section id="contacto">
+  <section id="galeria">
+    <div class="wrap">
+      <h2>Galería</h2>
+      <p class="lead">Algunos de nuestros trabajos.</p>
+      <div class="gallery">
+        <img src="img/galeria-1.jpg" alt="Trabajo de impresión 3D 1" width="600" height="450" loading="lazy">
+        <img src="img/galeria-2.jpg" alt="Trabajo de impresión 3D 2" width="600" height="450" loading="lazy">
+        <img src="img/galeria-3.jpg" alt="Trabajo de impresión 3D 3" width="600" height="450" loading="lazy">
+        <img src="img/galeria-4.jpg" alt="Trabajo de impresión 3D 4" width="600" height="450" loading="lazy">
+        <img src="img/galeria-5.jpg" alt="Trabajo de impresión 3D 5" width="600" height="450" loading="lazy">
+        <img src="img/galeria-6.jpg" alt="Trabajo de impresión 3D 6" width="600" height="450" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <section id="proceso">
+    <div class="wrap">
+      <h2>Cómo trabajamos</h2>
+      <p class="lead">Un proceso simple, de tu idea a tu pieza en la mano.</p>
+      <ol class="steps">
+        <li><h3>Cuéntanos tu idea</h3><p>Envíanos tu modelo 3D, un dibujo o una descripción.</p></li>
+        <li><h3>Recibe tu cotización</h3><p>Te indicamos material, tiempo y precio.</p></li>
+        <li><h3>Imprimimos</h3><p>Fabricamos tu pieza y revisamos la calidad.</p></li>
+        <li><h3>Entrega</h3><p>Coordinamos el recojo o el envío.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="nosotros">
+    <div class="wrap about">
+      <img src="img/nosotros.jpg" alt="Equipo y taller de APEx3D" width="800" height="600" loading="lazy">
+      <div>
+        <h2>Nosotros</h2>
+        <p>APEx3D es una empresa de impresión 3D en La Paz, Bolivia. Combinamos diseño, mecánica y electrónica para fabricar piezas que funcionan.</p>
+        <p>Reemplaza este texto con la historia de tu empresa y lo que te diferencia.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacto">
+    <div class="wrap">
       <h2>Contacto</h2>
-      <p>Escríbenos a <a href="mailto:correo@ejemplo.com">correo@ejemplo.com</a>.</p>
-    </section>
-  </main>
+      <p class="lead">Escríbenos por la red que prefieras y te respondemos con tu cotización.</p>
+      <div class="social">
+        <a class="btn primary" href="https://wa.me/59160128027" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn" href="https://www.tiktok.com/@apex3d8?_r=1&_t=ZS-9AHlio3fx8E" target="_blank" rel="noopener">TikTok</a>
+        <a class="btn" href="https://www.facebook.com/share/1B3Dbkyt1G/" target="_blank" rel="noopener">Facebook</a>
+        <a class="btn" href="https://www.instagram.com/apex3d_lapaz?stkn=MWx3cWoyamVyaGN0dA%3D%3D&utm_source=qr" target="_blank" rel="noopener">Instagram</a>
+      </div>
+      <p class="phone">WhatsApp: +591 60128027</p>
+    </div>
+  </section>
+</main>
 
-  <footer>© 2026 APEx3D</footer>
+<footer>
+  <div class="wrap">© 2026 APEx3D. Impresión 3D en La Paz, Bolivia.</div>
+</footer>
+
+<a class="wa-float" href="https://wa.me/59160128027" target="_blank" rel="noopener">WhatsApp</a>
+
+<script>
+  var burger = document.getElementById('burger');
+  var menu = document.getElementById('menu');
+  burger.addEventListener('click', function () {
+    var open = menu.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open);
+  });
+  menu.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') {
+      menu.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
+    }
+  });
+</script>
 </body>
 </html>
