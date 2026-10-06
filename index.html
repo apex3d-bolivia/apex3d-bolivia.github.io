@@ -97,15 +97,16 @@
   .steps h3 { font-size: 1.15rem; margin-bottom: 6px; }
   .steps p { margin: 0; color: var(--muted); font-size: .95rem; }
 
-  /* Nosotros */
-  #nosotros { background: var(--panel); }
-  .about { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-  .about img { aspect-ratio: 4/3; object-fit: cover; width: 100%; }
-  .about p { color: var(--muted); margin: 0 0 16px; }
-
   /* Contacto */
-  .social { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
-  .social .btn { text-align: center; }
+  .social { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 8px; }
+  .social-link { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); text-decoration: none; transition: border-color .2s, transform .2s; }
+  .social-link:hover { border-color: var(--blue-hi); transform: translateY(-3px); }
+  .social-logo { display: grid; place-items: center; flex: 0 0 48px; width: 48px; height: 48px; border-radius: 6px; overflow: hidden; background: var(--panel); }
+  .social-logo img { width: 100%; height: 100%; object-fit: contain; }
+  .social-copy { display: grid; min-width: 0; }
+  .social-name { font-weight: 600; }
+  .social-hint { color: var(--muted); font-size: .85rem; }
+  .social-arrow { margin-left: auto; color: var(--blue-hi); font-size: 1.2rem; }
   .phone { margin-top: 24px; color: var(--muted); }
 
   footer { border-top: 1px solid var(--line); padding: 28px 0 calc(28px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: .9rem; text-align: center; }
@@ -119,7 +120,7 @@
     nav.open { display: block; }
     nav ul { flex-direction: column; gap: 4px; }
     nav a { display: block; padding: 12px 0; }
-    .hero .wrap, .about, .catalog-grid { grid-template-columns: 1fr; }
+    .hero .wrap, .catalog-grid { grid-template-columns: 1fr; }
     .hero .crop { max-width: 380px; margin: 0 auto; order: -1; }
     .services { grid-template-columns: 1fr 1fr; }
     .steps { grid-template-columns: 1fr 1fr; }
@@ -147,7 +148,6 @@
         <li><a href="#catalogo">Catálogo</a></li>
         <li><a href="#galeria">Galería</a></li>
         <li><a href="#proceso">Cómo trabajamos</a></li>
-        <li><a href="#nosotros">Nosotros</a></li>
         <li><a href="#contacto">Contacto</a></li>
       </ul>
     </nav>
@@ -237,26 +237,31 @@
     </div>
   </section>
 
-  <section id="nosotros">
-    <div class="wrap about">
-      <img src="img/nosotros.jpg" alt="Equipo y taller de APEx3D" width="800" height="600" loading="lazy">
-      <div>
-        <h2>Nosotros</h2>
-        <p>APEx3D es una empresa de impresión 3D en La Paz, Bolivia. Combinamos diseño, mecánica y electrónica para fabricar piezas que funcionan.</p>
-        <p>Reemplaza este texto con la historia de tu empresa y lo que te diferencia.</p>
-      </div>
-    </div>
-  </section>
-
   <section id="contacto">
     <div class="wrap">
       <h2>Contacto</h2>
       <p class="lead">Escríbenos por la red que prefieras y te respondemos con tu cotización.</p>
       <div class="social">
-        <a class="btn primary" href="https://wa.me/59160128027" target="_blank" rel="noopener">WhatsApp</a>
-        <a class="btn" href="https://www.tiktok.com/@apex3d8?_r=1&_t=ZS-9AHlio3fx8E" target="_blank" rel="noopener">TikTok</a>
-        <a class="btn" href="https://www.facebook.com/share/1B3Dbkyt1G/" target="_blank" rel="noopener">Facebook</a>
-        <a class="btn" href="https://www.instagram.com/apex3d_lapaz?stkn=MWx3cWoyamVyaGN0dA%3D%3D&utm_source=qr" target="_blank" rel="noopener">Instagram</a>
+        <a class="social-link" href="https://wa.me/59160128027" target="_blank" rel="noopener">
+          <span class="social-logo"><img src="img/whatsapp.png" alt="" width="48" height="48" loading="lazy"></span>
+          <span class="social-copy"><span class="social-name">WhatsApp</span><span class="social-hint">Escríbenos</span></span>
+          <span class="social-arrow" aria-hidden="true">&#8599;</span>
+        </a>
+        <a class="social-link" href="https://www.tiktok.com/@apex3d8?_r=1&amp;_t=ZS-9AHlio3fx8E" target="_blank" rel="noopener">
+          <span class="social-logo"><img src="img/tiktok.png" alt="" width="48" height="48" loading="lazy"></span>
+          <span class="social-copy"><span class="social-name">TikTok</span><span class="social-hint">Mira nuestros videos</span></span>
+          <span class="social-arrow" aria-hidden="true">&#8599;</span>
+        </a>
+        <a class="social-link" href="https://www.facebook.com/share/1B3Dbkyt1G/" target="_blank" rel="noopener">
+          <span class="social-logo"><img src="img/facebook.png" alt="" width="48" height="48" loading="lazy"></span>
+          <span class="social-copy"><span class="social-name">Facebook</span><span class="social-hint">Síguenos</span></span>
+          <span class="social-arrow" aria-hidden="true">&#8599;</span>
+        </a>
+        <a class="social-link" href="https://www.instagram.com/apex3d_lapaz?stkn=MWx3cWoyamVyaGN0dA%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener">
+          <span class="social-logo"><img src="img/instagram.png" alt="" width="48" height="48" loading="lazy"></span>
+          <span class="social-copy"><span class="social-name">Instagram</span><span class="social-hint">Mira nuestros trabajos</span></span>
+          <span class="social-arrow" aria-hidden="true">&#8599;</span>
+        </a>
       </div>
       <p class="phone">WhatsApp: +591 60128027</p>
     </div>
