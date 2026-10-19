@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pedidos | APEx3D</title>
+<meta name="description" content="Panel privado para organizar pedidos de impresión 3D de APEx3D.">
+<link rel="icon" href="img/logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #101722;
+    --line: #1e2a3a;
+    --blue: #1f6fd1;
+    --blue-hi: #4a95f5;
+    --text: #f2f4f7;
+    --muted: #9aa7b5;
+    --head: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--body); }
+  a { color: inherit; }
+  button, input, select, textarea { font: inherit; }
+  :focus-visible { outline: 3px solid var(--blue-hi); outline-offset: 2px; }
+  .wrap { width: min(1440px, calc(100% - 32px)); margin: 0 auto; }
+  header { border-bottom: 1px solid var(--line); background: #0d1118; }
+  .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; font: 700 1.4rem var(--head); text-decoration: none; }
+  .brand img { width: 48px; height: 48px; object-fit: cover; }
+  .top-actions { display: flex; align-items: center; gap: 12px; }
+  main { padding: 32px 0 64px; }
+  h1, h2, h3 { font-family: var(--head); line-height: 1.15; }
+  h1 { margin: 0 0 8px; font-size: clamp(2rem, 4vw, 3rem); }
+  h2 { margin: 0 0 16px; font-size: 1.6rem; }
+  .muted { color: var(--muted); }
+  .notice { margin: 20px 0; padding: 14px 16px; border: 1px solid #856b2c; border-radius: 6px; background: #211b0d; color: #f3d991; }
+  .panel { margin-top: 24px; padding: 24px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  .auth-panel { max-width: 520px; margin: 36px auto; }
+  .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field.wide { grid-column: span 2; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-weight: 600; }
+  input, select, textarea {
+    width: 100%; min-height: 42px; padding: 9px 11px; color: var(--text);
+    border: 1px solid #354457; border-radius: 4px; background: #0a0e14;
+  }
+  input[type="file"] { padding: 6px; }
+  input[readonly] { color: #c2ccd8; background: #151d28; }
+  textarea { min-height: 92px; resize: vertical; }
+  .help { color: var(--muted); font-size: .88rem; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
+  .button { min-height: 40px; padding: 8px 14px; color: var(--text); border: 1px solid var(--blue); border-radius: 4px; background: var(--blue); cursor: pointer; text-decoration: none; }
+  .button:hover { background: var(--blue-hi); border-color: var(--blue-hi); }
+  .button.secondary { background: transparent; border-color: #425268; }
+  .button.danger { background: #762b35; border-color: #a3404c; }
+  .button:disabled { opacity: .55; cursor: wait; }
+  .hidden { display: none !important; }
+  .dashboard-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .dashboard-head p { margin: 0; }
+  .view-tabs { display: flex; gap: 8px; margin-top: 20px; border-bottom: 1px solid var(--line); }
+  .view-tab { padding: 10px 16px; color: var(--muted); border: 0; border-bottom: 3px solid transparent; background: transparent; font-weight: 600; cursor: pointer; }
+  .view-tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--blue-hi); }
+  .view-panel { margin-top: 0; }
+  .calendar-panel { max-width: 760px; }
+  .table-wrap { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { position: sticky; top: 0; z-index: 1; background: #172130; }
+  th button { padding: 0; color: var(--text); border: 0; background: transparent; font-weight: 700; cursor: pointer; }
+  tbody tr:hover { background: #151f2c; }
+  .product-photo { width: 54px; height: 54px; object-fit: cover; border-radius: 4px; background: #0a0e14; }
+  .row-actions { display: flex; gap: 6px; }
+  .row-actions .button { min-height: 32px; padding: 4px 8px; }
+  .calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .calendar-head h2 { margin: 0; text-align: center; font-size: 1.3rem; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 14px; }
+  .calendar-grid .weekday { color: var(--muted); font-size: .8rem; text-align: center; }
+  .day { position: relative; min-height: 42px; padding: 4px; color: var(--text); border: 1px solid transparent; border-radius: 4px; background: #0a0e14; cursor: pointer; }
+  .day:hover, .day.selected { border-color: var(--blue-hi); }
+  .day.other { color: #637184; }
+  .day.today { box-shadow: inset 0 0 0 1px var(--blue); }
+  .day.has-orders::after { position: absolute; right: 5px; bottom: 4px; width: 6px; height: 6px; content: ""; border-radius: 50%; background: var(--blue-hi); }
+  .day-count { display: block; color: var(--blue-hi); font-size: .68rem; line-height: 1; }
+  .day-orders { margin: 18px 0 0; padding-left: 20px; }
+  .day-orders li { margin: 5px 0; }
+  .empty { padding: 22px; color: var(--muted); text-align: center; }
+  .status { display: inline-block; padding: 3px 8px; border: 1px solid #40536b; border-radius: 999px; font-size: .83rem; }
+  .feedback { min-height: 1.5em; margin: 10px 0 0; color: #ffb3b3; }
+  footer { padding: 20px 0; color: var(--muted); border-top: 1px solid var(--line); text-align: center; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  @media (max-width: 650px) {
+    .wrap { width: min(100% - 20px, 1440px); }
+    .panel { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field.wide { grid-column: span 2; }
+    .topbar { min-height: 64px; }
+    .brand img { width: 40px; height: 40px; }
+  }
+  @media (max-width: 420px) { .form-grid { grid-template-columns: 1fr; } .field.wide { grid-column: auto; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap topbar">
+    <a class="brand" href="index.html"><img src="img/logo.jpg" alt="">APEx3D · Pedidos</a>
+    <div class="top-actions">
+      <a class="button secondary" href="index.html">Volver al sitio</a>
+      <button class="button secondary hidden" id="changePasswordButton" type="button">Cambiar contraseña</button>
+      <button class="button secondary hidden" id="logoutButton" type="button">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <h1>Organización de pedidos</h1>
+  <p class="muted">Registra solicitudes, organiza entregas y consulta las fechas en el calendario.</p>
+  <div class="notice hidden" id="configNotice" role="alert"></div>
+
+  <section class="panel auth-panel hidden" id="loginPanel">
+    <h2>Ingresar a pedidos</h2>
+    <p class="muted">El acceso está limitado a los usuarios autorizados por APEx3D.</p>
+    <form id="loginForm">
+      <div class="form-grid">
+        <div class="field full"><label for="loginEmail">Correo autorizado</label><input id="loginEmail" name="email" type="email" autocomplete="username" required maxlength="254"></div>
+        <div class="field full"><label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required></div>
+      </div>
+      <div class="actions">
+        <button class="button" type="submit">Ingresar</button>
+        <button class="button secondary" id="recoverPasswordButton" type="button">Recuperar contraseña</button>
+      </div>
+      <p class="feedback" id="loginFeedback" role="alert"></p>
+    </form>
+  </section>
+
+  <div class="hidden" id="dashboard">
+    <div class="dashboard-head">
+      <p class="muted" id="orderSummary">Cargando pedidos…</p>
+      <div class="actions">
+        <button class="button secondary" id="importLocalButton" type="button">Importar pedidos de este navegador</button>
+        <button class="button" id="newOrderButton" type="button">+ Nuevo pedido</button>
+      </div>
+    </div>
+    <section class="panel auth-panel hidden" id="passwordPanel">
+      <h2>Establecer contraseña</h2>
+      <p class="muted">Usa esta opción después de aceptar una invitación o para cambiar tu contraseña actual.</p>
+      <form id="passwordForm">
+        <div class="form-grid">
+          <div class="field full"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field full"><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+        </div>
+        <div class="actions">
+          <button class="button" type="submit">Guardar contraseña</button>
+          <button class="button secondary" id="cancelPasswordButton" type="button">Cancelar</button>
+        </div>
+        <p class="feedback" id="passwordFeedback" role="alert"></p>
+      </form>
+    </section>
+    <div class="view-tabs" role="tablist" aria-label="Vistas de pedidos">
+      <button class="view-tab" id="listTab" type="button" role="tab" aria-selected="true" aria-controls="listView">Lista</button>
+      <button class="view-tab" id="calendarTab" type="button" role="tab" aria-selected="false" aria-controls="calendarView" tabindex="-1">Calendario</button>
+    </div>
+    <section class="panel view-panel" id="listView" role="tabpanel" aria-labelledby="listTab">
+        <h2>Pedidos</h2>
+        <div class="field" style="max-width:300px;margin-bottom:14px">
+          <label for="statusFilter">Filtrar por estado</label>
+          <select id="statusFilter">
+            <option value="">Todos los estados</option>
+            <option>Planeación</option><option>Imprimiendo</option><option>Concluido</option><option>Entregado</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr id="tableHead"></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+          <div class="empty hidden" id="emptyOrders">Todavía no hay pedidos. Usa “Nuevo pedido” para agregar el primero.</div>
+        </div>
+    </section>
+    <section class="panel view-panel calendar-panel hidden" id="calendarView" role="tabpanel" aria-labelledby="calendarTab" hidden>
+        <div class="calendar-head">
+          <button class="button secondary" id="previousMonth" type="button" aria-label="Mes anterior">&larr;</button>
+          <h2 id="calendarTitle"></h2>
+          <button class="button secondary" id="nextMonth" type="button" aria-label="Mes siguiente">&rarr;</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <h3 id="selectedDateTitle"></h3>
+        <ul class="day-orders" id="dayOrders"></ul>
+        <p class="muted" id="calendarHint">Los puntos indican fechas con entregas programadas.</p>
+    </section>
+
+    <section class="panel hidden" id="orderPanel">
+      <h2 id="orderFormTitle">Nuevo pedido</h2>
+      <form id="orderForm">
+        <div class="form-grid">
+          <div class="field wide"><label for="productName">Nombre del producto solicitado *</label><input id="productName" name="productName" required maxlength="120"></div>
+          <div class="field"><label for="productPhoto">Fotografía del producto</label><input id="productPhoto" name="productPhoto" type="file" accept="image/*"><span class="help">La imagen se reduce para ocupar menos espacio.</span></div>
+          <div class="field full"><label for="features">Características</label><textarea id="features" name="features" maxlength="1500"></textarea></div>
+          <div class="field"><label for="quantity">Cantidad *</label><input id="quantity" name="quantity" type="number" min="1" step="1" required value="1"></div>
+          <div class="field"><label for="customerName">Nombre del interesado *</label><input id="customerName" name="customerName" required maxlength="120"></div>
+          <div class="field"><label for="customerPhone">Celular del interesado</label><input id="customerPhone" name="customerPhone" type="tel" maxlength="30"></div>
+          <div class="field"><label for="deliveryDate">Fecha de entrega *</label><input id="deliveryDate" name="deliveryDate" type="date" required></div>
+          <div class="field"><label for="deliveryMethod">Forma de entrega *</label><select id="deliveryMethod" name="deliveryMethod" required><option value="">Seleccionar</option><option>En persona</option><option>Paquetería</option><option>Encomienda</option></select></div>
+          <div class="field"><label for="printer">Encargado de la impresión</label><input id="printer" name="printer" maxlength="120"></div>
+          <div class="field"><label for="totalCost">Costo total (Bs) *</label><input id="totalCost" name="totalCost" type="number" min="0" step="0.01" required value="0"></div>
+          <div class="field"><label for="amountPaid">Cantidad ya pagada (Bs)</label><input id="amountPaid" name="amountPaid" type="number" min="0" step="0.01" value="0"></div>
+          <div class="field"><label for="balance">Saldo (Bs)</label><input id="balance" name="balance" type="number" readonly value="0.00" aria-describedby="balanceHelp"><span class="help" id="balanceHelp">Se calcula como costo total menos cantidad pagada.</span></div>
+          <div class="field"><label for="status">Estado *</label><select id="status" name="status" required><option>Planeación</option><option>Imprimiendo</option><option>Concluido</option><option>Entregado</option></select></div>
+          <div class="field full"><label for="observations">Observación</label><textarea id="observations" name="observations" maxlength="2000"></textarea></div>
+        </div>
+        <div class="actions">
+          <button class="button" id="saveOrderButton" type="submit">Guardar pedido</button>
+          <button class="button secondary" id="cancelOrderButton" type="button">Cancelar</button>
+          <span class="feedback" id="orderFeedback" role="alert"></span>
+        </div>
+      </form>
+    </section>
+  </div>
+</main>
+<footer><div class="wrap">APEx3D · Panel local de pedidos</div></footer>
+<script src="supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pedidos.js"></script>
+</body>
+</html>
