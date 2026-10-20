@@ -1,8 +1,9 @@
 (function () {
   'use strict';
 
-  var ACCOUNT_KEY = 'apex3d-local-accounts-v1';
-  var SESSION_KEY = 'apex3d-local-session-v1';
+  var USERNAME = 'apex3d';
+  var PASSWORD = 'apex3d123';
+  var SESSION_KEY = 'apex3d-local-session-v2';
   var DB_NAME = 'apex3d-orders-v1';
   var STATUSES = ['Planeación', 'Imprimiendo', 'Concluido', 'Entregado'];
   var columns = [
@@ -75,55 +76,10 @@
     });
   }
 
-  function derivePassword(password, salt) {
-    var encoder = new TextEncoder();
-    return crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits'])
-      .then(function (key) {
-        return crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt, iterations: 150000, hash: 'SHA-256' }, key, 256);
-      });
-  }
-
-  function bytesToBase64(bytes) {
-    var binary = '';
-    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    return btoa(binary);
-  }
-
-  function base64ToBytes(value) {
-    var binary = atob(value);
-    var bytes = new Uint8Array(binary.length);
-    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  }
-
-  async function hashPassword(password, salt) {
-    return bytesToBase64(new Uint8Array(await derivePassword(password, salt)));
-  }
-
-  function bytesMatch(left, right) {
-    if (left.length !== right.length) return false;
-    var difference = 0;
-    for (var i = 0; i < left.length; i++) difference |= left[i] ^ right[i];
-    return difference === 0;
-  }
-
-  function getAccounts() {
-    var saved = localStorage.getItem(ACCOUNT_KEY);
-    if (!saved) return [];
-    var accounts = JSON.parse(saved);
-    if (!Array.isArray(accounts) || accounts.length !== 3) {
-      throw new Error('La configuración local de usuarios no es válida. Vuelve a configurar los tres usuarios.');
-    }
-    return accounts;
-  }
-
   function setAuthentication(isAuthenticated) {
-    var accounts = getAccounts();
-    byId('setupPanel').classList.toggle('hidden', accounts.length === 3 || isAuthenticated);
-    byId('loginPanel').classList.toggle('hidden', accounts.length !== 3 || isAuthenticated);
+    byId('loginPanel').classList.toggle('hidden', isAuthenticated);
     byId('dashboard').classList.toggle('hidden', !isAuthenticated);
     byId('logoutButton').classList.toggle('hidden', !isAuthenticated);
-    byId('manageUsersButton').classList.toggle('hidden', !isAuthenticated);
   }
 
   function setActiveView(view) {
@@ -393,78 +349,22 @@
     });
   }
 
-  byId('setupForm').addEventListener('submit', async function (event) {
-    event.preventDefault();
-    showFeedback('setupFeedback', '');
-    if (!crypto.subtle) {
-      showFeedback('setupFeedback', 'Este navegador no ofrece el almacenamiento de contraseña requerido. Actualiza el navegador o abre el sitio mediante HTTPS.');
-      return;
-    }
-    var accounts = [];
-    var usernames = [];
-    for (var i = 1; i <= 3; i++) {
-      var username = byId('user' + i).value.trim().toLocaleLowerCase();
-      var password = byId('password' + i).value;
-      if (username.length < 3 || password.length < 8) {
-        showFeedback('setupFeedback', 'Cada usuario debe tener al menos 3 caracteres y cada contraseña al menos 8.');
-        return;
-      }
-      if (usernames.indexOf(username) !== -1) {
-        showFeedback('setupFeedback', 'Los tres nombres de usuario deben ser distintos.');
-        return;
-      }
-      usernames.push(username);
-    }
-    var button = byId('setupForm').querySelector('button[type="submit"]');
-    button.disabled = true;
-    try {
-      for (var j = 1; j <= 3; j++) {
-        var salt = crypto.getRandomValues(new Uint8Array(16));
-        accounts.push({
-          username: byId('user' + j).value.trim().toLocaleLowerCase(),
-          salt: bytesToBase64(salt),
-          verifier: await hashPassword(byId('password' + j).value, salt)
-        });
-      }
-      localStorage.setItem(ACCOUNT_KEY, JSON.stringify(accounts));
-      sessionStorage.removeItem(SESSION_KEY);
-      byId('setupForm').reset();
-      byId('setupPanel').classList.add('hidden');
-      byId('cancelUsersButton').classList.add('hidden');
-      byId('setupTitle').textContent = 'Configurar los tres usuarios';
-      setAuthentication(false);
-      showFeedback('loginFeedback', 'Usuarios configurados. Ya pueden ingresar.');
-    } catch (error) {
-      showFeedback('setupFeedback', 'No se pudieron guardar los usuarios: ' + error.message);
-    } finally {
-      button.disabled = false;
-    }
-  });
-
   byId('loginForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     showFeedback('loginFeedback', '');
     var button = byId('loginForm').querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      var accounts = getAccounts();
       var username = byId('loginUsername').value.trim().toLocaleLowerCase();
-      var account = accounts.find(function (item) { return item.username === username; });
-      if (!account) {
+      var password = byId('loginPassword').value;
+      if (username !== USERNAME || password !== PASSWORD) {
         showFeedback('loginFeedback', 'Usuario o contraseña incorrectos.');
         return;
       }
-      var actual = new Uint8Array(await derivePassword(
-        byId('loginPassword').value, base64ToBytes(account.salt)
-      ));
-      if (!bytesMatch(actual, base64ToBytes(account.verifier))) {
-        showFeedback('loginFeedback', 'Usuario o contraseña incorrectos.');
-        return;
-      }
-      sessionStorage.setItem(SESSION_KEY, account.username);
+      sessionStorage.setItem(SESSION_KEY, USERNAME);
       showDashboard();
     } catch (error) {
-      showFeedback('loginFeedback', 'No se pudo verificar el acceso: ' + error.message);
+      showFeedback('loginFeedback', 'No se pudo iniciar sesión: ' + error.message);
     } finally {
       button.disabled = false;
     }
@@ -475,23 +375,6 @@
     orders = [];
     resetOrderForm();
     setAuthentication(false);
-  });
-
-  byId('manageUsersButton').addEventListener('click', function () {
-    byId('setupTitle').textContent = 'Cambiar los tres usuarios';
-    byId('setupForm').reset();
-    showFeedback('setupFeedback', 'Ingresa nuevamente los tres usuarios y sus nuevas contraseñas.');
-    byId('cancelUsersButton').classList.remove('hidden');
-    byId('setupPanel').classList.remove('hidden');
-    byId('setupPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  byId('cancelUsersButton').addEventListener('click', function () {
-    byId('setupForm').reset();
-    byId('setupPanel').classList.add('hidden');
-    byId('cancelUsersButton').classList.add('hidden');
-    byId('setupTitle').textContent = 'Configurar los tres usuarios';
-    showFeedback('setupFeedback', '');
   });
 
   byId('newOrderButton').addEventListener('click', function () {
@@ -598,15 +481,13 @@
 
   try {
     if (!window.isSecureContext || !window.indexedDB) {
-      byId('setupPanel').classList.remove('hidden');
-      showFeedback('setupFeedback', 'Abre esta página con HTTPS para habilitar el almacenamiento local.');
-      byId('setupForm').querySelector('button[type="submit"]').disabled = true;
+      byId('loginPanel').classList.remove('hidden');
+      showFeedback('loginFeedback', 'Abre esta página con HTTPS para habilitar el almacenamiento local.');
+      byId('loginForm').querySelector('button[type="submit"]').disabled = true;
     } else {
-      var accounts = getAccounts();
       buildTableHeaders();
-      if (accounts.length === 3 && accounts.some(function (account) {
-        return account.username === sessionStorage.getItem(SESSION_KEY);
-      })) {
+      localStorage.removeItem('apex3d-local-accounts-v1');
+      if (sessionStorage.getItem(SESSION_KEY) === USERNAME) {
         showDashboard();
       } else {
         sessionStorage.removeItem(SESSION_KEY);
@@ -614,7 +495,7 @@
       }
     }
   } catch (error) {
-    byId('setupPanel').classList.remove('hidden');
-    showFeedback('setupFeedback', error.message);
+    byId('loginPanel').classList.remove('hidden');
+    showFeedback('loginFeedback', error.message);
   }
 }());

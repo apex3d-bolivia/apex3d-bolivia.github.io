@@ -110,7 +110,6 @@
     <a class="brand" href="index.html"><img src="img/logo.jpg" alt="">APEx3D · Pedidos</a>
     <div class="top-actions">
       <a class="button secondary" href="index.html">Volver al sitio</a>
-      <button class="button secondary hidden" id="manageUsersButton" type="button">Cambiar usuarios</button>
       <button class="button secondary hidden" id="logoutButton" type="button">Cerrar sesión</button>
     </div>
   </div>
@@ -118,27 +117,7 @@
 <main class="wrap">
   <h1>Organización de pedidos</h1>
   <p class="muted">Registra solicitudes, organiza entregas y consulta las fechas en el calendario.</p>
-  <div class="notice"><strong>Acceso sencillo:</strong> los usuarios y pedidos se guardan solo en este navegador. Es una protección básica para uso informal, no una seguridad real; los datos no se sincronizan con otros dispositivos.</div>
-
-  <section class="panel auth-panel hidden" id="setupPanel">
-    <h2 id="setupTitle">Configurar los tres usuarios</h2>
-    <p class="muted">Crea un usuario y una contraseña para cada una de las tres personas. Se guardarán en este navegador.</p>
-    <form id="setupForm">
-      <div class="form-grid">
-        <div class="field full"><label for="user1">Usuario 1</label><input id="user1" name="user1" autocomplete="username" required minlength="3" maxlength="40"></div>
-        <div class="field full"><label for="password1">Contraseña 1</label><input id="password1" name="password1" type="password" autocomplete="new-password" required minlength="8"></div>
-        <div class="field full"><label for="user2">Usuario 2</label><input id="user2" name="user2" autocomplete="off" required minlength="3" maxlength="40"></div>
-        <div class="field full"><label for="password2">Contraseña 2</label><input id="password2" name="password2" type="password" autocomplete="new-password" required minlength="8"></div>
-        <div class="field full"><label for="user3">Usuario 3</label><input id="user3" name="user3" autocomplete="off" required minlength="3" maxlength="40"></div>
-        <div class="field full"><label for="password3">Contraseña 3</label><input id="password3" name="password3" type="password" autocomplete="new-password" required minlength="8"></div>
-      </div>
-      <div class="actions">
-        <button class="button" type="submit">Guardar los tres usuarios</button>
-        <button class="button secondary hidden" id="cancelUsersButton" type="button">Cancelar</button>
-      </div>
-      <p class="feedback" id="setupFeedback" role="alert"></p>
-    </form>
-  </section>
+  <div class="notice"><strong>Acceso sencillo:</strong> el usuario y la contraseña están escritos en el código público del sitio; este acceso solo sirve como barrera informal. Los pedidos se guardan en este navegador y no se sincronizan con otros dispositivos.</div>
 
   <section class="panel auth-panel hidden" id="loginPanel">
     <h2>Ingresar a pedidos</h2>
@@ -148,6 +127,7 @@
         <div class="field full"><label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required></div>
       </div>
       <div class="actions"><button class="button" type="submit">Ingresar</button></div>
+      <p class="help">Usuario: <strong>apex3d</strong> · Contraseña: <strong>apex3d123</strong></p>
       <p class="feedback" id="loginFeedback" role="alert"></p>
     </form>
   </section>
