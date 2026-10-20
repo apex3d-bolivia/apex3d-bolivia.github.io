@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pedidos | APEx3D</title>
-<meta name="description" content="Panel privado para organizar pedidos de impresión 3D de APEx3D.">
+<meta name="description" content="Panel sencillo para organizar pedidos de impresión 3D de APEx3D.">
 <link rel="icon" href="img/logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +73,7 @@
   th { position: sticky; top: 0; z-index: 1; background: #172130; }
   th button { padding: 0; color: var(--text); border: 0; background: transparent; font-weight: 700; cursor: pointer; }
   tbody tr:hover { background: #151f2c; }
-  .product-photo { width: 54px; height: 54px; object-fit: cover; border-radius: 4px; background: #0a0e14; }
+  .file-link { color: var(--blue-hi); }
   .row-actions { display: flex; gap: 6px; }
   .row-actions .button { min-height: 32px; padding: 4px 8px; }
   .calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -110,7 +110,7 @@
     <a class="brand" href="index.html"><img src="img/logo.jpg" alt="">APEx3D · Pedidos</a>
     <div class="top-actions">
       <a class="button secondary" href="index.html">Volver al sitio</a>
-      <button class="button secondary hidden" id="changePasswordButton" type="button">Cambiar contraseña</button>
+      <button class="button secondary hidden" id="manageUsersButton" type="button">Cambiar usuarios</button>
       <button class="button secondary hidden" id="logoutButton" type="button">Cerrar sesión</button>
     </div>
   </div>
@@ -118,20 +118,36 @@
 <main class="wrap">
   <h1>Organización de pedidos</h1>
   <p class="muted">Registra solicitudes, organiza entregas y consulta las fechas en el calendario.</p>
-  <div class="notice hidden" id="configNotice" role="alert"></div>
+  <div class="notice"><strong>Acceso sencillo:</strong> los usuarios y pedidos se guardan solo en este navegador. Es una protección básica para uso informal, no una seguridad real; los datos no se sincronizan con otros dispositivos.</div>
+
+  <section class="panel auth-panel hidden" id="setupPanel">
+    <h2 id="setupTitle">Configurar los tres usuarios</h2>
+    <p class="muted">Crea un usuario y una contraseña para cada una de las tres personas. Se guardarán en este navegador.</p>
+    <form id="setupForm">
+      <div class="form-grid">
+        <div class="field full"><label for="user1">Usuario 1</label><input id="user1" name="user1" autocomplete="username" required minlength="3" maxlength="40"></div>
+        <div class="field full"><label for="password1">Contraseña 1</label><input id="password1" name="password1" type="password" autocomplete="new-password" required minlength="8"></div>
+        <div class="field full"><label for="user2">Usuario 2</label><input id="user2" name="user2" autocomplete="off" required minlength="3" maxlength="40"></div>
+        <div class="field full"><label for="password2">Contraseña 2</label><input id="password2" name="password2" type="password" autocomplete="new-password" required minlength="8"></div>
+        <div class="field full"><label for="user3">Usuario 3</label><input id="user3" name="user3" autocomplete="off" required minlength="3" maxlength="40"></div>
+        <div class="field full"><label for="password3">Contraseña 3</label><input id="password3" name="password3" type="password" autocomplete="new-password" required minlength="8"></div>
+      </div>
+      <div class="actions">
+        <button class="button" type="submit">Guardar los tres usuarios</button>
+        <button class="button secondary hidden" id="cancelUsersButton" type="button">Cancelar</button>
+      </div>
+      <p class="feedback" id="setupFeedback" role="alert"></p>
+    </form>
+  </section>
 
   <section class="panel auth-panel hidden" id="loginPanel">
     <h2>Ingresar a pedidos</h2>
-    <p class="muted">El acceso está limitado a los usuarios autorizados por APEx3D.</p>
     <form id="loginForm">
       <div class="form-grid">
-        <div class="field full"><label for="loginEmail">Correo autorizado</label><input id="loginEmail" name="email" type="email" autocomplete="username" required maxlength="254"></div>
+        <div class="field full"><label for="loginUsername">Usuario</label><input id="loginUsername" name="username" autocomplete="username" required></div>
         <div class="field full"><label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required></div>
       </div>
-      <div class="actions">
-        <button class="button" type="submit">Ingresar</button>
-        <button class="button secondary" id="recoverPasswordButton" type="button">Recuperar contraseña</button>
-      </div>
+      <div class="actions"><button class="button" type="submit">Ingresar</button></div>
       <p class="feedback" id="loginFeedback" role="alert"></p>
     </form>
   </section>
@@ -140,25 +156,10 @@
     <div class="dashboard-head">
       <p class="muted" id="orderSummary">Cargando pedidos…</p>
       <div class="actions">
-        <button class="button secondary" id="importLocalButton" type="button">Importar pedidos de este navegador</button>
+        <button class="button secondary" id="exportOrdersButton" type="button">Descargar copia de pedidos</button>
         <button class="button" id="newOrderButton" type="button">+ Nuevo pedido</button>
       </div>
     </div>
-    <section class="panel auth-panel hidden" id="passwordPanel">
-      <h2>Establecer contraseña</h2>
-      <p class="muted">Usa esta opción después de aceptar una invitación o para cambiar tu contraseña actual.</p>
-      <form id="passwordForm">
-        <div class="form-grid">
-          <div class="field full"><label for="newPassword">Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required></div>
-          <div class="field full"><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
-        </div>
-        <div class="actions">
-          <button class="button" type="submit">Guardar contraseña</button>
-          <button class="button secondary" id="cancelPasswordButton" type="button">Cancelar</button>
-        </div>
-        <p class="feedback" id="passwordFeedback" role="alert"></p>
-      </form>
-    </section>
     <div class="view-tabs" role="tablist" aria-label="Vistas de pedidos">
       <button class="view-tab" id="listTab" type="button" role="tab" aria-selected="true" aria-controls="listView">Lista</button>
       <button class="view-tab" id="calendarTab" type="button" role="tab" aria-selected="false" aria-controls="calendarView" tabindex="-1">Calendario</button>
@@ -197,7 +198,7 @@
       <form id="orderForm">
         <div class="form-grid">
           <div class="field wide"><label for="productName">Nombre del producto solicitado *</label><input id="productName" name="productName" required maxlength="120"></div>
-          <div class="field"><label for="productPhoto">Fotografía del producto</label><input id="productPhoto" name="productPhoto" type="file" accept="image/*"><span class="help">La imagen se reduce para ocupar menos espacio.</span></div>
+          <div class="field"><label for="fileLink">Enlace del archivo del producto</label><input id="fileLink" name="fileLink" type="url" maxlength="2000" placeholder="https://…"><span class="help">Pega un enlace compartido al diseño, modelo u otro archivo.</span></div>
           <div class="field full"><label for="features">Características</label><textarea id="features" name="features" maxlength="1500"></textarea></div>
           <div class="field"><label for="quantity">Cantidad *</label><input id="quantity" name="quantity" type="number" min="1" step="1" required value="1"></div>
           <div class="field"><label for="customerName">Nombre del interesado *</label><input id="customerName" name="customerName" required maxlength="120"></div>
@@ -221,8 +222,6 @@
   </div>
 </main>
 <footer><div class="wrap">APEx3D · Panel local de pedidos</div></footer>
-<script src="supabase-config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pedidos.js"></script>
 </body>
 </html>

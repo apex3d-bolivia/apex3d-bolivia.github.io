@@ -1,11 +1,12 @@
 (function () {
   'use strict';
 
-  var LEGACY_DB_NAME = 'apex3d-orders-v1';
-  var STORAGE_BUCKET = 'order-photos';
+  var ACCOUNT_KEY = 'apex3d-local-accounts-v1';
+  var SESSION_KEY = 'apex3d-local-session-v1';
+  var DB_NAME = 'apex3d-orders-v1';
   var STATUSES = ['Planeación', 'Imprimiendo', 'Concluido', 'Entregado'];
   var columns = [
-    ['productName', 'Producto'], ['photo', 'Fotografía'], ['features', 'Características'],
+    ['productName', 'Producto'], ['fileLink', 'Enlace del archivo'], ['features', 'Características'],
     ['quantity', 'Cantidad'], ['customerName', 'Interesado'], ['customerPhone', 'Celular'],
     ['deliveryDate', 'Fecha de entrega'], ['deliveryMethod', 'Entrega'], ['printer', 'Encargado'],
     ['totalCost', 'Costo total (Bs)'], ['amountPaid', 'Pagado (Bs)'], ['balance', 'Saldo (Bs)'],
@@ -17,8 +18,8 @@
   var sortDirection = 1;
   var selectedDate = toISODate(new Date());
   var calendarMonth = new Date();
-  var activeUserId = null;
-  var client = null;
+  calendarMonth.setDate(1);
+  var databasePromise;
   var objectUrls = [];
 
   function byId(id) { return document.getElementById(id); }
@@ -26,19 +27,103 @@
     return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
   }
   function showFeedback(id, message) { byId(id).textContent = message; }
-  function createId() {
-    if (typeof crypto.randomUUID !== 'function') throw new Error('Este navegador debe ser actualizado para generar identificadores seguros.');
-    return crypto.randomUUID();
+
+  function openDatabase() {
+    if (databasePromise) return databasePromise;
+    databasePromise = new Promise(function (resolve, reject) {
+      var request = indexedDB.open(DB_NAME, 1);
+      request.onupgradeneeded = function () {
+        if (!request.result.objectStoreNames.contains('orders')) {
+          request.result.createObjectStore('orders', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { reject(request.error || new Error('No se pudo abrir el almacenamiento local.')); };
+      request.onblocked = function () { reject(new Error('El almacenamiento está bloqueado por otra pestaña.')); };
+    });
+    return databasePromise;
   }
-  function formatMoney(value) { return Number(value || 0).toFixed(2); }
-  function orderBalance(order) { return Number(order.totalCost || 0) - Number(order.amountPaid || 0); }
+
+  async function readOrders() {
+    var db = await openDatabase();
+    return new Promise(function (resolve, reject) {
+      var request = db.transaction('orders', 'readonly').objectStore('orders').getAll();
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { reject(request.error || new Error('No se pudieron leer los pedidos.')); };
+    });
+  }
+
+  async function saveOrder(order) {
+    var db = await openDatabase();
+    return new Promise(function (resolve, reject) {
+      var transaction = db.transaction('orders', 'readwrite');
+      transaction.objectStore('orders').put(order);
+      transaction.oncomplete = function () { resolve(); };
+      transaction.onerror = function () { reject(transaction.error || new Error('No se pudo guardar el pedido.')); };
+      transaction.onabort = function () { reject(transaction.error || new Error('Se canceló el guardado del pedido.')); };
+    });
+  }
+
+  async function removeOrder(id) {
+    var db = await openDatabase();
+    return new Promise(function (resolve, reject) {
+      var transaction = db.transaction('orders', 'readwrite');
+      transaction.objectStore('orders').delete(id);
+      transaction.oncomplete = function () { resolve(); };
+      transaction.onerror = function () { reject(transaction.error || new Error('No se pudo eliminar el pedido.')); };
+      transaction.onabort = function () { reject(transaction.error || new Error('Se canceló la eliminación del pedido.')); };
+    });
+  }
+
+  function derivePassword(password, salt) {
+    var encoder = new TextEncoder();
+    return crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits'])
+      .then(function (key) {
+        return crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt, iterations: 150000, hash: 'SHA-256' }, key, 256);
+      });
+  }
+
+  function bytesToBase64(bytes) {
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
+
+  function base64ToBytes(value) {
+    var binary = atob(value);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  async function hashPassword(password, salt) {
+    return bytesToBase64(new Uint8Array(await derivePassword(password, salt)));
+  }
+
+  function bytesMatch(left, right) {
+    if (left.length !== right.length) return false;
+    var difference = 0;
+    for (var i = 0; i < left.length; i++) difference |= left[i] ^ right[i];
+    return difference === 0;
+  }
+
+  function getAccounts() {
+    var saved = localStorage.getItem(ACCOUNT_KEY);
+    if (!saved) return [];
+    var accounts = JSON.parse(saved);
+    if (!Array.isArray(accounts) || accounts.length !== 3) {
+      throw new Error('La configuración local de usuarios no es válida. Vuelve a configurar los tres usuarios.');
+    }
+    return accounts;
+  }
 
   function setAuthentication(isAuthenticated) {
-    byId('loginPanel').classList.toggle('hidden', isAuthenticated);
+    var accounts = getAccounts();
+    byId('setupPanel').classList.toggle('hidden', accounts.length === 3 || isAuthenticated);
+    byId('loginPanel').classList.toggle('hidden', accounts.length !== 3 || isAuthenticated);
     byId('dashboard').classList.toggle('hidden', !isAuthenticated);
     byId('logoutButton').classList.toggle('hidden', !isAuthenticated);
-    byId('changePasswordButton').classList.toggle('hidden', !isAuthenticated);
-    if (!isAuthenticated) byId('passwordPanel').classList.add('hidden');
+    byId('manageUsersButton').classList.toggle('hidden', !isAuthenticated);
   }
 
   function setActiveView(view) {
@@ -53,6 +138,14 @@
     byId('calendarView').hidden = !showCalendar;
   }
 
+  function createId() {
+    return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() :
+      Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+
+  function formatMoney(value) { return Number(value || 0).toFixed(2); }
+  function orderBalance(order) { return Number(order.totalCost || 0) - Number(order.amountPaid || 0); }
+
   function clearObjectUrls() {
     objectUrls.forEach(function (url) { URL.revokeObjectURL(url); });
     objectUrls = [];
@@ -64,14 +157,26 @@
     return cell;
   }
 
-  function createImageCell(order) {
+  function createFileCell(order) {
     var cell = document.createElement('td');
-    if (order.photoUrl) {
-      var image = document.createElement('img');
-      image.className = 'product-photo';
-      image.src = order.photoUrl;
-      image.alt = 'Fotografía de ' + order.productName;
-      cell.appendChild(image);
+    if (order.fileLink) {
+      var link = document.createElement('a');
+      link.className = 'file-link';
+      link.href = order.fileLink;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Abrir archivo';
+      link.setAttribute('aria-label', 'Abrir archivo de ' + order.productName + ' en una pestaña nueva');
+      cell.appendChild(link);
+    } else if (order.photo instanceof Blob) {
+      var link = document.createElement('a');
+      var url = URL.createObjectURL(order.photo);
+      objectUrls.push(url);
+      link.className = 'file-link';
+      link.href = url;
+      link.download = order.productName + '-archivo-anterior';
+      link.textContent = 'Descargar imagen anterior';
+      cell.appendChild(link);
     } else {
       cell.textContent = '—';
     }
@@ -82,25 +187,35 @@
     var left = a[sortKey];
     var right = b[sortKey];
     if (sortKey === 'balance') { left = orderBalance(a); right = orderBalance(b); }
-    if (sortKey === 'photo' || sortKey === 'actions') return 0;
-    if (typeof left === 'number' || typeof right === 'number') return (Number(left || 0) - Number(right || 0)) * sortDirection;
-    return String(left || '').localeCompare(String(right || ''), 'es', { numeric: true, sensitivity: 'base' }) * sortDirection;
+    if (sortKey === 'actions') return 0;
+    if (typeof left === 'number' || typeof right === 'number') {
+      return (Number(left || 0) - Number(right || 0)) * sortDirection;
+    }
+    return String(left || '').localeCompare(String(right || ''), 'es', {
+      numeric: true, sensitivity: 'base'
+    }) * sortDirection;
   }
 
   function renderTable() {
+    clearObjectUrls();
     var filter = byId('statusFilter').value;
-    var visibleOrders = orders.filter(function (order) { return !filter || order.status === filter; }).slice().sort(compareOrders);
+    var visibleOrders = orders.filter(function (order) {
+      return !filter || order.status === filter;
+    }).slice().sort(compareOrders);
     var body = byId('ordersBody');
     body.replaceChildren();
     byId('emptyOrders').classList.toggle('hidden', visibleOrders.length > 0);
     columns.forEach(function (column, index) {
       var button = byId('tableHead').children[index].querySelector('button');
-      if (button) button.textContent = column[1] + (sortKey === column[0] ? (sortDirection === 1 ? ' ↑' : ' ↓') : '');
+      if (button) {
+        button.textContent = column[1] + (sortKey === column[0] ?
+          (sortDirection === 1 ? ' ↑' : ' ↓') : '');
+      }
     });
     visibleOrders.forEach(function (order) {
       var row = document.createElement('tr');
       row.appendChild(makeCell(order.productName));
-      row.appendChild(createImageCell(order));
+      row.appendChild(createFileCell(order));
       row.appendChild(makeCell(order.features));
       row.appendChild(makeCell(order.quantity));
       row.appendChild(makeCell(order.customerName));
@@ -136,7 +251,8 @@
       row.appendChild(actionsCell);
       body.appendChild(row);
     });
-    byId('orderSummary').textContent = orders.length + (orders.length === 1 ? ' pedido registrado' : ' pedidos registrados');
+    byId('orderSummary').textContent = orders.length +
+      (orders.length === 1 ? ' pedido registrado' : ' pedidos registrados');
     renderCalendar();
   }
 
@@ -203,7 +319,8 @@
       }(iso));
       grid.appendChild(button);
     }
-    var formattedDate = new Intl.DateTimeFormat('es', { dateStyle: 'long' }).format(new Date(selectedDate + 'T12:00:00'));
+    var formattedDate = new Intl.DateTimeFormat('es', { dateStyle: 'long' })
+      .format(new Date(selectedDate + 'T12:00:00'));
     byId('selectedDateTitle').textContent = 'Entregas: ' + formattedDate;
     var dayList = byId('dayOrders');
     dayList.replaceChildren();
@@ -222,101 +339,6 @@
     }
   }
 
-  function mapOrder(row, photoUrl) {
-    return {
-      id: row.id,
-      productName: row.product_name,
-      photoPath: row.photo_path,
-      photoUrl: photoUrl,
-      features: row.features || '',
-      quantity: row.quantity,
-      customerName: row.customer_name,
-      customerPhone: row.customer_phone || '',
-      deliveryDate: row.delivery_date,
-      deliveryMethod: row.delivery_method,
-      printer: row.printer || '',
-      totalCost: Number(row.total_cost),
-      amountPaid: Number(row.amount_paid),
-      observations: row.observations || '',
-      status: row.status
-    };
-  }
-
-  async function signedPhotoUrl(path) {
-    if (!path) return null;
-    var result = await client.storage.from(STORAGE_BUCKET).createSignedUrl(path, 3600);
-    if (result.error) throw result.error;
-    return result.data.signedUrl;
-  }
-
-  async function loadOrders() {
-    var result = await client.from('orders')
-      .select('id, product_name, photo_path, features, quantity, customer_name, customer_phone, delivery_date, delivery_method, printer, total_cost, amount_paid, observations, status')
-      .order('delivery_date', { ascending: true });
-    if (result.error) throw result.error;
-    orders = await Promise.all(result.data.map(async function (row) {
-      return mapOrder(row, await signedPhotoUrl(row.photo_path));
-    }));
-    renderTable();
-  }
-
-  function databaseRow(order, photoPath) {
-    return {
-      id: order.id,
-      product_name: order.productName,
-      photo_path: photoPath,
-      features: order.features,
-      quantity: order.quantity,
-      customer_name: order.customerName,
-      customer_phone: order.customerPhone,
-      delivery_date: order.deliveryDate,
-      delivery_method: order.deliveryMethod,
-      printer: order.printer,
-      total_cost: order.totalCost,
-      amount_paid: order.amountPaid,
-      observations: order.observations,
-      status: order.status
-    };
-  }
-
-  async function uploadPhoto(orderId, photo) {
-    if (!photo) return null;
-    var path = orderId + '/' + createId() + '.jpg';
-    var result = await client.storage.from(STORAGE_BUCKET).upload(path, photo, {
-      contentType: 'image/jpeg',
-      upsert: false
-    });
-    if (result.error) throw result.error;
-    return path;
-  }
-
-  async function deletePhoto(path) {
-    if (!path) return;
-    var result = await client.storage.from(STORAGE_BUCKET).remove([path]);
-    if (result.error) throw result.error;
-  }
-
-  async function upsertOrder(order, photoBlob, existingPhotoPath) {
-    var photoPath = existingPhotoPath;
-    var newPhotoPath = null;
-    if (photoBlob) {
-      newPhotoPath = await uploadPhoto(order.id, photoBlob);
-      photoPath = newPhotoPath;
-    }
-    var result = await client.from('orders').upsert(databaseRow(order, photoPath), { onConflict: 'id' });
-    if (result.error) {
-      if (newPhotoPath) await deletePhoto(newPhotoPath);
-      throw result.error;
-    }
-    if (newPhotoPath && existingPhotoPath && existingPhotoPath !== newPhotoPath) {
-      try {
-        await deletePhoto(existingPhotoPath);
-      } catch (error) {
-        window.alert('El pedido se guardó, pero no se pudo retirar la fotografía anterior: ' + error.message);
-      }
-    }
-  }
-
   function resetOrderForm() {
     byId('orderForm').reset();
     byId('quantity').value = '1';
@@ -332,7 +354,7 @@
   function beginEdit(order) {
     editingId = order.id;
     var form = byId('orderForm');
-    ['productName', 'features', 'quantity', 'customerName', 'customerPhone', 'deliveryDate',
+    ['productName', 'fileLink', 'features', 'quantity', 'customerName', 'customerPhone', 'deliveryDate',
       'deliveryMethod', 'printer', 'totalCost', 'amountPaid', 'status', 'observations'].forEach(function (name) {
       form.elements[name].value = order[name] === undefined ? '' : order[name];
     });
@@ -346,40 +368,13 @@
 
   async function deleteOrder(order) {
     if (!window.confirm('¿Eliminar el pedido de "' + order.productName + '"? Esta acción no se puede deshacer.')) return;
-    var result = await client.from('orders').delete().eq('id', order.id);
-    if (result.error) {
-      window.alert('No se pudo eliminar el pedido: ' + result.error.message);
-      return;
+    try {
+      await removeOrder(order.id);
+      orders = orders.filter(function (item) { return item.id !== order.id; });
+      renderTable();
+    } catch (error) {
+      window.alert('No se pudo eliminar el pedido: ' + error.message);
     }
-    orders = orders.filter(function (item) { return item.id !== order.id; });
-    renderTable();
-    if (order.photoPath) {
-      try {
-        await deletePhoto(order.photoPath);
-      } catch (error) {
-        window.alert('El pedido se eliminó, pero no se pudo retirar su fotografía: ' + error.message);
-      }
-    }
-  }
-
-  async function compressPhoto(file) {
-    if (!file) return null;
-    if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido.');
-    var bitmap = await createImageBitmap(file);
-    var scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
-    var canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    var context = canvas.getContext('2d');
-    if (!context) throw new Error('No se pudo procesar la fotografía en este navegador.');
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    return new Promise(function (resolve, reject) {
-      canvas.toBlob(function (blob) {
-        if (blob) resolve(blob);
-        else reject(new Error('No se pudo convertir la fotografía.'));
-      }, 'image/jpeg', 0.82);
-    });
   }
 
   function updateBalance() {
@@ -388,188 +383,115 @@
     byId('balance').value = formatMoney(total - paid);
   }
 
-  function readLegacyOrders() {
-    return new Promise(function (resolve, reject) {
-      var request = indexedDB.open(LEGACY_DB_NAME);
-      request.onerror = function () { reject(request.error || new Error('No se pudo abrir el almacenamiento anterior.')); };
-      request.onsuccess = function () {
-        var db = request.result;
-        if (!db.objectStoreNames.contains('orders')) {
-          db.close();
-          resolve([]);
-          return;
-        }
-        var transaction = db.transaction('orders', 'readonly');
-        var getRequest = transaction.objectStore('orders').getAll();
-        getRequest.onsuccess = function () { resolve(getRequest.result); };
-        getRequest.onerror = function () { reject(getRequest.error || new Error('No se pudieron leer los pedidos anteriores.')); };
-        transaction.oncomplete = function () { db.close(); };
-      };
+  function showDashboard() {
+    setAuthentication(true);
+    openDatabase().then(readOrders).then(function (savedOrders) {
+      orders = savedOrders;
+      renderTable();
+    }).catch(function (error) {
+      showFeedback('orderSummary', 'Error al cargar pedidos: ' + error.message);
     });
   }
 
-  async function importLegacyOrders() {
-    var button = byId('importLocalButton');
-    button.disabled = true;
-    try {
-      var localOrders = await readLegacyOrders();
-      if (!localOrders.length) {
-        window.alert('No se encontraron pedidos guardados en este navegador.');
+  byId('setupForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    showFeedback('setupFeedback', '');
+    if (!crypto.subtle) {
+      showFeedback('setupFeedback', 'Este navegador no ofrece el almacenamiento de contraseña requerido. Actualiza el navegador o abre el sitio mediante HTTPS.');
+      return;
+    }
+    var accounts = [];
+    var usernames = [];
+    for (var i = 1; i <= 3; i++) {
+      var username = byId('user' + i).value.trim().toLocaleLowerCase();
+      var password = byId('password' + i).value;
+      if (username.length < 3 || password.length < 8) {
+        showFeedback('setupFeedback', 'Cada usuario debe tener al menos 3 caracteres y cada contraseña al menos 8.');
         return;
       }
-      if (!window.confirm('Se importarán ' + localOrders.length +
-        ' pedidos desde este navegador a la base compartida de APEx3D. Sus fotografías también se subirán. Los datos locales originales no se borrarán. ¿Continuar?')) return;
-      var imported = 0;
-      var failures = [];
-      for (var i = 0; i < localOrders.length; i++) {
-        var old = localOrders[i];
-        try {
-          var id = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(old.id) ? old.id : createId();
-          var order = {
-            id: id,
-            productName: String(old.productName || '').trim(),
-            features: String(old.features || ''),
-            quantity: Number(old.quantity),
-            customerName: String(old.customerName || '').trim(),
-            customerPhone: String(old.customerPhone || ''),
-            deliveryDate: old.deliveryDate,
-            deliveryMethod: old.deliveryMethod,
-            printer: String(old.printer || ''),
-            totalCost: Number(old.totalCost),
-            amountPaid: Number(old.amountPaid || 0),
-            observations: String(old.observations || ''),
-            status: old.status
-          };
-          if (!order.productName || !order.customerName || !order.deliveryDate ||
-              !STATUSES.includes(order.status) || order.amountPaid > order.totalCost) {
-            throw new Error('El pedido no cumple las validaciones actuales.');
-          }
-          var photo = old.photo instanceof Blob ? old.photo : null;
-          var existing = orders.find(function (item) { return item.id === order.id; });
-          await upsertOrder(order, photo, existing ? existing.photoPath : null);
-          imported++;
-        } catch (error) {
-          failures.push('Pedido ' + (i + 1) + ': ' + error.message);
-        }
+      if (usernames.indexOf(username) !== -1) {
+        showFeedback('setupFeedback', 'Los tres nombres de usuario deben ser distintos.');
+        return;
       }
-      await loadOrders();
-      var message = imported + ' de ' + localOrders.length + ' pedidos importados. Los originales siguen guardados aquí.';
-      if (failures.length) message += '\nNo se pudieron importar:\n' + failures.join('\n');
-      window.alert(message);
+      usernames.push(username);
+    }
+    var button = byId('setupForm').querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      for (var j = 1; j <= 3; j++) {
+        var salt = crypto.getRandomValues(new Uint8Array(16));
+        accounts.push({
+          username: byId('user' + j).value.trim().toLocaleLowerCase(),
+          salt: bytesToBase64(salt),
+          verifier: await hashPassword(byId('password' + j).value, salt)
+        });
+      }
+      localStorage.setItem(ACCOUNT_KEY, JSON.stringify(accounts));
+      sessionStorage.removeItem(SESSION_KEY);
+      byId('setupForm').reset();
+      byId('setupPanel').classList.add('hidden');
+      byId('cancelUsersButton').classList.add('hidden');
+      byId('setupTitle').textContent = 'Configurar los tres usuarios';
+      setAuthentication(false);
+      showFeedback('loginFeedback', 'Usuarios configurados. Ya pueden ingresar.');
     } catch (error) {
-      window.alert('No se pudieron importar los pedidos locales: ' + error.message);
+      showFeedback('setupFeedback', 'No se pudieron guardar los usuarios: ' + error.message);
     } finally {
       button.disabled = false;
     }
-  }
-
-  async function confirmSession(session) {
-    if (!session || !session.user) {
-      activeUserId = null;
-      orders = [];
-      setAuthentication(false);
-      return;
-    }
-    var userId = session.user.id;
-    if (activeUserId === userId) return;
-    activeUserId = userId;
-    var allowResult = await client.rpc('is_allowed_user');
-    if (allowResult.error || allowResult.data !== true) {
-      activeUserId = null;
-      await client.auth.signOut();
-      setAuthentication(false);
-      showFeedback('loginFeedback', 'Este correo no está autorizado para acceder a los pedidos.');
-      return;
-    }
-    showFeedback('loginFeedback', '');
-    setAuthentication(true);
-    try {
-      await loadOrders();
-    } catch (error) {
-      showFeedback('orderSummary', 'No se pudieron cargar los pedidos: ' + error.message);
-    }
-  }
+  });
 
   byId('loginForm').addEventListener('submit', async function (event) {
     event.preventDefault();
+    showFeedback('loginFeedback', '');
     var button = byId('loginForm').querySelector('button[type="submit"]');
     button.disabled = true;
-    showFeedback('loginFeedback', '');
     try {
-      var result = await client.auth.signInWithPassword({
-        email: byId('loginEmail').value.trim(),
-        password: byId('loginPassword').value
-      });
-      if (result.error) throw result.error;
-      await confirmSession(result.data.session);
+      var accounts = getAccounts();
+      var username = byId('loginUsername').value.trim().toLocaleLowerCase();
+      var account = accounts.find(function (item) { return item.username === username; });
+      if (!account) {
+        showFeedback('loginFeedback', 'Usuario o contraseña incorrectos.');
+        return;
+      }
+      var actual = new Uint8Array(await derivePassword(
+        byId('loginPassword').value, base64ToBytes(account.salt)
+      ));
+      if (!bytesMatch(actual, base64ToBytes(account.verifier))) {
+        showFeedback('loginFeedback', 'Usuario o contraseña incorrectos.');
+        return;
+      }
+      sessionStorage.setItem(SESSION_KEY, account.username);
+      showDashboard();
     } catch (error) {
-      showFeedback('loginFeedback', 'No se pudo iniciar sesión. Verifica el correo y la contraseña, o confirma que tu cuenta fue invitada.');
+      showFeedback('loginFeedback', 'No se pudo verificar el acceso: ' + error.message);
     } finally {
       button.disabled = false;
     }
   });
 
-  byId('recoverPasswordButton').addEventListener('click', async function () {
-    var email = byId('loginEmail').value.trim();
-    if (!email) {
-      showFeedback('loginFeedback', 'Escribe primero el correo autorizado para enviar el enlace de recuperación.');
-      byId('loginEmail').focus();
-      return;
-    }
-    try {
-      var result = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
-      });
-      if (result.error) throw result.error;
-      showFeedback('loginFeedback', 'Si la cuenta puede restablecer la contraseña, recibirás un correo con los pasos.');
-    } catch (error) {
-      showFeedback('loginFeedback', 'No se pudo solicitar el restablecimiento. Inténtalo de nuevo más tarde.');
-    }
-  });
-
-  byId('changePasswordButton').addEventListener('click', function () {
-    byId('passwordPanel').classList.remove('hidden');
-    showFeedback('passwordFeedback', '');
-    byId('passwordPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    byId('newPassword').focus();
-  });
-  byId('cancelPasswordButton').addEventListener('click', function () {
-    byId('passwordForm').reset();
-    byId('passwordPanel').classList.add('hidden');
-  });
-  byId('passwordForm').addEventListener('submit', async function (event) {
-    event.preventDefault();
-    var password = byId('newPassword').value;
-    if (password.length < 8 || password !== byId('confirmPassword').value) {
-      showFeedback('passwordFeedback', 'Las contraseñas deben coincidir y tener al menos 8 caracteres.');
-      return;
-    }
-    var button = byId('passwordForm').querySelector('button[type="submit"]');
-    button.disabled = true;
-    try {
-      var result = await client.auth.updateUser({ password: password });
-      if (result.error) throw result.error;
-      byId('passwordForm').reset();
-      byId('passwordPanel').classList.add('hidden');
-      window.alert('La contraseña se actualizó correctamente.');
-    } catch (error) {
-      showFeedback('passwordFeedback', 'No se pudo actualizar la contraseña: ' + error.message);
-    } finally {
-      button.disabled = false;
-    }
-  });
-
-  byId('logoutButton').addEventListener('click', async function () {
-    var result = await client.auth.signOut();
-    if (result.error) {
-      window.alert('No se pudo cerrar la sesión: ' + result.error.message);
-      return;
-    }
-    activeUserId = null;
+  byId('logoutButton').addEventListener('click', function () {
+    sessionStorage.removeItem(SESSION_KEY);
     orders = [];
     resetOrderForm();
-    byId('passwordForm').reset();
     setAuthentication(false);
+  });
+
+  byId('manageUsersButton').addEventListener('click', function () {
+    byId('setupTitle').textContent = 'Cambiar los tres usuarios';
+    byId('setupForm').reset();
+    showFeedback('setupFeedback', 'Ingresa nuevamente los tres usuarios y sus nuevas contraseñas.');
+    byId('cancelUsersButton').classList.remove('hidden');
+    byId('setupPanel').classList.remove('hidden');
+    byId('setupPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  byId('cancelUsersButton').addEventListener('click', function () {
+    byId('setupForm').reset();
+    byId('setupPanel').classList.add('hidden');
+    byId('cancelUsersButton').classList.add('hidden');
+    byId('setupTitle').textContent = 'Configurar los tres usuarios';
+    showFeedback('setupFeedback', '');
   });
 
   byId('newOrderButton').addEventListener('click', function () {
@@ -585,7 +507,6 @@
   byId('statusFilter').addEventListener('change', renderTable);
   byId('listTab').addEventListener('click', function () { setActiveView('list'); });
   byId('calendarTab').addEventListener('click', function () { setActiveView('calendar'); });
-  byId('importLocalButton').addEventListener('click', importLegacyOrders);
   byId('totalCost').addEventListener('input', updateBalance);
   byId('amountPaid').addEventListener('input', updateBalance);
   byId('previousMonth').addEventListener('click', function () {
@@ -597,6 +518,33 @@
     renderCalendar();
   });
 
+  byId('exportOrdersButton').addEventListener('click', async function () {
+    try {
+      var savedOrders = await readOrders();
+      var exportOrders = await Promise.all(savedOrders.map(async function (order) {
+        var result = Object.assign({}, order);
+        if (order.photo instanceof Blob) {
+          result.photo = await new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () { resolve(reader.result); };
+            reader.onerror = function () { reject(reader.error || new Error('No se pudo exportar una fotografía.')); };
+            reader.readAsDataURL(order.photo);
+          });
+        }
+        return result;
+      }));
+      var blob = new Blob([JSON.stringify(exportOrders, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = 'apex3d-pedidos-' + toISODate(new Date()) + '.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      window.alert('No se pudo descargar la copia: ' + error.message);
+    }
+  });
+
   byId('orderForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     var saveButton = byId('saveOrderButton');
@@ -605,11 +553,18 @@
     try {
       var form = byId('orderForm');
       var existing = orders.find(function (order) { return order.id === editingId; });
-      var photoFile = byId('productPhoto').files[0];
-      var photoBlob = photoFile ? await compressPhoto(photoFile) : null;
+      var fileLink = form.elements.fileLink.value.trim();
+      if (fileLink) {
+        var parsedFileLink = new URL(fileLink);
+        if (parsedFileLink.protocol !== 'https:' && parsedFileLink.protocol !== 'http:') {
+          throw new Error('El enlace debe comenzar con http:// o https://.');
+        }
+      }
       var order = {
         id: editingId || createId(),
         productName: form.elements.productName.value.trim(),
+        fileLink: fileLink,
+        photo: existing ? existing.photo : null,
         features: form.elements.features.value.trim(),
         quantity: Number(form.elements.quantity.value),
         customerName: form.elements.customerName.value.trim(),
@@ -623,22 +578,17 @@
         status: form.elements.status.value
       };
       if (!STATUSES.includes(order.status)) throw new Error('Selecciona un estado válido.');
-      if (!Number.isFinite(order.totalCost) || !Number.isFinite(order.amountPaid) ||
-          order.totalCost < 0 || order.amountPaid < 0 || order.amountPaid > order.totalCost) {
-        throw new Error('Verifica el costo total y el monto pagado; el pago no puede superar el costo.');
-      }
-      if (!Number.isInteger(order.quantity) || order.quantity < 1) throw new Error('La cantidad debe ser un número entero mayor que cero.');
-      await upsertOrder(order, photoBlob, existing ? existing.photoPath : null);
+      if (order.amountPaid > order.totalCost) throw new Error('La cantidad pagada no puede superar el costo total.');
+      await saveOrder(order);
+      var index = orders.findIndex(function (item) { return item.id === order.id; });
+      if (index === -1) orders.push(order);
+      else orders[index] = order;
       selectedDate = order.deliveryDate;
       calendarMonth = new Date(order.deliveryDate + 'T12:00:00');
       calendarMonth.setDate(1);
+      renderTable();
       resetOrderForm();
       byId('orderPanel').classList.add('hidden');
-      try {
-        await loadOrders();
-      } catch (error) {
-        showFeedback('orderSummary', 'El pedido se guardó, pero no se pudo actualizar la lista: ' + error.message);
-      }
     } catch (error) {
       showFeedback('orderFeedback', 'No se pudo guardar el pedido: ' + error.message);
     } finally {
@@ -646,42 +596,25 @@
     }
   });
 
-  var config = window.APEx3D_SUPABASE_CONFIG || {};
-  if (!window.isSecureContext || !config.url || !config.anonKey ||
-      !window.supabase || typeof window.supabase.createClient !== 'function') {
-    byId('configNotice').textContent = 'El panel privado aún no está configurado. Revisa supabase-config.js y completa la configuración inicial de Supabase indicada en README.md.';
-    byId('configNotice').classList.remove('hidden');
-  } else {
-    try {
-      client = window.supabase.createClient(config.url, config.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-      });
+  try {
+    if (!window.isSecureContext || !window.indexedDB) {
+      byId('setupPanel').classList.remove('hidden');
+      showFeedback('setupFeedback', 'Abre esta página con HTTPS para habilitar el almacenamiento local.');
+      byId('setupForm').querySelector('button[type="submit"]').disabled = true;
+    } else {
+      var accounts = getAccounts();
       buildTableHeaders();
-      setAuthentication(false);
-      client.auth.onAuthStateChange(function (event, session) {
-        window.setTimeout(function () {
-          if (event === 'SIGNED_OUT') {
-            activeUserId = null;
-            orders = [];
-            setAuthentication(false);
-          } else if (session) {
-            confirmSession(session).catch(function (error) {
-              activeUserId = null;
-              setAuthentication(false);
-              showFeedback('loginFeedback', 'No se pudo validar el acceso: ' + error.message);
-            });
-          }
-        }, 0);
-      });
-      client.auth.getSession().then(function (result) {
-        if (result.error) throw result.error;
-        if (result.data.session) return confirmSession(result.data.session);
-      }).catch(function (error) {
-        showFeedback('loginFeedback', 'No se pudo comprobar la sesión: ' + error.message);
-      });
-    } catch (error) {
-      byId('configNotice').textContent = 'No se pudo inicializar el acceso seguro: ' + error.message;
-      byId('configNotice').classList.remove('hidden');
+      if (accounts.length === 3 && accounts.some(function (account) {
+        return account.username === sessionStorage.getItem(SESSION_KEY);
+      })) {
+        showDashboard();
+      } else {
+        sessionStorage.removeItem(SESSION_KEY);
+        setAuthentication(false);
+      }
     }
+  } catch (error) {
+    byId('setupPanel').classList.remove('hidden');
+    showFeedback('setupFeedback', error.message);
   }
 }());
